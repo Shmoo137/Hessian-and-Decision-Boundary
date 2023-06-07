@@ -1,0 +1,33 @@
+{
+    "model": {
+        "type": "FNN_2layer",
+        "args": {
+            "num_neurons_layer1": 100,
+            "num_neurons_layer2": 100
+        }
+    },
+    "optimizer": {
+        "type": "SGD",
+        "args": {
+            "lr": 0.02,
+            "momentum": 0.0,
+            "weight_decay": 0.0
+        }
+    },
+    "dataset": {
+        "type": "gauss_checkerboard_noisy_close",
+        "args": {
+            "random": false
+        }
+    },
+    "init_model_at": "",
+    "train_fraction": 0.5,
+    "test_fraction": 0.2,
+    "trainer": {
+        "num_epochs": 2000,
+        "how_often_save_model": 0,
+        "how_often_compute_grads": 0,
+        "how_often_print": 400,
+        "batch_size": 64
+    }
+}

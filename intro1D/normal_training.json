@@ -1,0 +1,32 @@
+{
+    "model": {
+        "type": "FNN",
+        "args": {
+            "num_neurons": 10
+        }
+    },
+    "optimizer": {
+        "type": "SGD",
+        "args": {
+            "lr": 0.002,
+            "momentum": 0.0,
+            "weight_decay": 0.0
+        }
+    },
+    "dataset": {
+        "type": "intro",
+        "args": {
+            
+        }
+    },
+    "init_model_at": "",
+    "train_fraction": 1.0,
+    "test_fraction": 0.0,
+    "trainer": {
+        "num_epochs": 45000,
+        "how_often_save_model": 0,
+        "how_often_compute_grads": 0,
+        "how_often_print": 100,
+        "batch_size": 6
+    }
+}

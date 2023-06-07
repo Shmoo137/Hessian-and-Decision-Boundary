@@ -1,0 +1,33 @@
+{
+    "model": {
+        "type": "CNN",
+        "args": {
+        }
+    },
+    "optimizer": {
+        "type": "SGD",
+        "args": {
+            "lr": 0.02,
+            "momentum": 0.0,
+            "weight_decay": 0.0
+        }
+    },
+    "dataset": {
+        "type": "mnist2D",
+        "args": {
+            "random": true,
+            "class_list": [0,1,7,9],
+            "num_samples_per_cls": 200
+        }
+    },
+    "init_model_at": "",
+    "train_fraction": 0.5,
+    "test_fraction": 0.2,
+    "trainer": {
+        "num_epochs": 10000,
+        "how_often_save_model": 0,
+        "how_often_compute_grads": 0,
+        "how_often_print": 50,
+        "batch_size": 64
+    }
+}

@@ -1,0 +1,31 @@
+{
+    "model": {
+        "type": "FNN_2layer",
+        "args": {
+            "num_neurons_layer1": 100,
+            "num_neurons_layer2": 100
+        }
+    },
+    "optimizer": {
+        "type": "Adam",
+        "args": {
+            "lr": 0.02
+        }
+    },
+    "dataset": {
+        "type": "gauss_mixtures",
+        "args": {
+            "random": false
+        }
+    },
+    "init_model_at": "",
+    "train_fraction": 0.5,
+    "test_fraction": 0.2,
+    "trainer": {
+        "num_epochs": 2000,
+        "how_often_save_model": 0,
+        "how_often_compute_grads": 0,
+        "how_often_print": 400,
+        "batch_size": 64
+    }
+}
