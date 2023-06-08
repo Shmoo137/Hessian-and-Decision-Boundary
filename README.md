@@ -55,7 +55,11 @@ TODO ALL CHECKERBOARD TRAININGS
 
 
 # Fig. 6
-TODO MNIST TRAINING
+python3 run_training.py --config=mnist2D/normal_training_c017.json
+python3 run_hessian_analysis.py --config=mnist2D/normal_training_c017.json
+python3 run_training.py --config=mnist2D/random_label_training_c017.json
+python3 run_training.py --config=mnist2D/adversarial_init_training_c017.json
+python3 run_hessian_analysis.py --config=mnist2D/adversarial_init_training_c017.json
 
 # Additional Datasets
 python3 run_training.py --config=circle/normal_training.json
@@ -92,7 +96,7 @@ python3 plotting/overlap_per_gradient_horizontal.py --config gauss/normal_traini
 TODO
 
 # Fig. 6: Normal and adversarial initialization training for MNIST-017 with t-SNE visualization.
-TODO
+python3 plotting/mnist_validation.py --config mnist2D/normal_training_c017.json mnist2D/adversarial_init_training_c017.json --precomputed_hessian 
 
 # Additional data:
 python3 plotting/hessian_encode_boundary.py --config gauss/normal_training.json circle/normal_training.json half_moon/normal_training.json hierachical/normal_training.json gauss_checkerboard_linear/noisy_init_training_close.json --precomputed_hessian 

@@ -131,7 +131,10 @@ if __name__ == '__main__':
         else:
             print('Computing overlap')
             vectors = [heigenvectors[:, which_heigenvector] for which_heigenvector in range(heigenvectors.shape[1])]
-            overlaps = compute_reinforcing_gradients(model, train_data.all, vectors, criterion)
+            mnist = False
+            if config['dataset']['type'] == 'mnist2D':
+                mnist = True
+            overlaps = compute_reinforcing_gradients(model, train_data.all, vectors, criterion, mnist=mnist)
             dump_pickle(overlaps,grad_path /  (name + '_overlaps.pkl'))
 
         # generalization measure weighting by eigenvalue - would not work since overlap values dont mean anything
