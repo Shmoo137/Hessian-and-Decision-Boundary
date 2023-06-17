@@ -3,7 +3,7 @@
 
 
 This repository contains the code for the main Figures from 'Unveiling the Hessian’s Connection
-to the Decision Boundary' by Mahalakshmi Sabanayagam, Freya Behrens, Urte Adomaityte and Anna Dawid [[ arxiv](https://arxiv.org/abs/2306.07104)].
+to the Decision Boundary' by Mahalakshmi Sabanayagam, Freya Behrens, Urte Adomaityte and Anna Dawid [[arxiv](https://arxiv.org/abs/2306.07104)].
 
 ## General structure
 
