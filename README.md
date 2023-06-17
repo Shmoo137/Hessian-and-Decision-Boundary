@@ -3,7 +3,7 @@
 
 
 This repository contains the code for the main Figures from 'Unveiling the Hessian’s Connection
-to the Decision Boundary' by Mahalakshmi Sabanayagam, Freya Behrens, Urte Adomaityte and Anna Dawid [[arxiv TODO add link](XYZ)].
+to the Decision Boundary' by Mahalakshmi Sabanayagam, Freya Behrens, Urte Adomaityte and Anna Dawid [[ arxiv](https://arxiv.org/abs/2306.07104)].
 
 ## General structure
 
@@ -51,8 +51,9 @@ python3 run_hessian_analysis.py --config=gauss/large_norm_training.json
 # None
 
 # Fig. 5
-TODO ALL CHECKERBOARD TRAININGS
-
+python3 run_training.py --config=gauss_checkerboard_linear/normal_training_close.json
+python3 run_training.py --config=gauss_checkerboard_noisy/normal_training_close.json
+python3 run_training.py --config=gauss_checkerboard_linear/noisy_init_training_close.json
 
 # Fig. 6
 python3 run_training.py --config=mnist2D/normal_training_c017.json
@@ -93,7 +94,9 @@ python3 plotting/overlap_per_gradient_horizontal.py --config gauss/normal_traini
 
 
 # Fig. 5: Simplicity bias and margin estimation for checkerboard. 
-TODO
+python3 plotting/simplicity_bias.py --config gauss_checkerboard_linear/normal_training_close.json gauss_checkerboard_linear/noisy_init_training_close.json 
+python3 plotting/margin_estimation.py --config gauss_checkerboard_linear/normal_training_close.json gauss_checkerboard_linear/noisy_init_training_close.json 
+
 
 # Fig. 6: Normal and adversarial initialization training for MNIST-017 with t-SNE visualization.
 python3 plotting/mnist_validation.py --config mnist2D/normal_training_c017.json mnist2D/adversarial_init_training_c017.json --precomputed_hessian 

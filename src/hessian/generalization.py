@@ -20,7 +20,7 @@ def compute_threshold(model, X, rand_vec_dim, k=5, criterion = nn.CrossEntropyLo
     print('min of ', max_overlap)
     return threshold
 
-def get_gen_measures(heigenvectors, heigenvalues, train_data, model, criterion, mnist=False, epsilon=zero):
+def get_gen_measures(heigenvectors, heigenvalues, train_data, model, criterion, mnist=False, epsilon=1e-6):
     vectors = [heigenvectors[:, which_heigenvector]
                for which_heigenvector in range(heigenvectors.shape[1])]
     overlaps = compute_reinforcing_gradients(
@@ -28,5 +28,4 @@ def get_gen_measures(heigenvectors, heigenvalues, train_data, model, criterion, 
     gen = generalization_measure(overlaps, zero=epsilon)
     tr = sum(heigenvalues)
     l1 = heigenvalues[-1]
-    # print('gen measure, trace, max lambda  ', gen, tr, l1)
     return (gen, tr, l1)
