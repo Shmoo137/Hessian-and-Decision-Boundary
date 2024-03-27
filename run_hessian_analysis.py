@@ -13,7 +13,7 @@ from src.utils.saving import dump_pickle, load_pickle
 from src.config import *
 from src.architectures import FNN, FNN_2layer, CNN, model_l2_norm
 from src.utils.general import find_hessian
-from src.hessian.grads import compute_reinforcing_gradients, compute_grad
+from src.hessian.grads import compute_reinforcing_gradients, compute_grad, compute_logit_grads
 from src.datasets import GaussMixtureDataset, IrisDataset, MNIST2DDataset, random_split, HierachicalGaussMixtureDataset, CircleDataset, HalfMoonDataset, GaussCheckerboardLinearClose
 from src.datasets import IntroDataset,MySubset,GaussMixtureDataset, IrisDataset, GaussCheckerboardLinearClose, GaussCheckerboardNoisyClose
 from src.datasets import MNIST2DDataset, HierachicalGaussMixtureDataset, CircleDataset, HalfMoonDataset
@@ -34,10 +34,11 @@ When comparing, figs get saved to ./Hessian_comparison, so be careful if you're 
 colors = [c_vibrant['blue'], c_vibrant['cyan'], c_vibrant['magenta'], c_vibrant['orange']]
 plt.rcParams["figure.figsize"] = (20, 5)
 
-plot_spectra = True
-plot_eigenvectors = True
-plot_overlaps = True
-plot_coherence = True
+plot_spectra = False
+plot_eigenvectors = False
+plot_overlaps = False
+plot_coherence = False
+plot_logit_coherence = True
 
 zero = 1e-6
 
@@ -47,6 +48,7 @@ if __name__ == '__main__':
     parser.add_argument('--config', type=str, nargs='+', help=f'Configuration file(s) of model(s) from {CONFIG_DIR}.')
     parser.add_argument('--precomputed_hessian', action=argparse.BooleanOptionalAction, help='Use precomputed hessian')
     parser.add_argument('--precomputed_overlap', action=argparse.BooleanOptionalAction, help='Use precomputed overlap')
+    parser.add_argument('--precomputed_logit_grads', action=argparse.BooleanOptionalAction, help='Use precomputed logit gradients')
     parser.add_argument('--reparameterize', action=argparse.BooleanOptionalAction, help='Reparameterize the model to make it more sharp.')
     args = parser.parse_args()
     #assert not args.precomputed_hessian or args.precomputed_overlap, "Cannot load precomputed overlap without precomputed hessian"
@@ -66,7 +68,11 @@ if __name__ == '__main__':
     if plot_coherence is True:
         fig_normalized_coherence, axs_normalized_coherence = plt.subplots(nrows=1, ncols=len(args.config), figsize=[20, 10], squeeze = False)
 
+    if plot_logit_coherence is True:
+        fig_logit_normalized_coherence, axs_logit_normalized_coherence = plt.subplots(nrows=1, ncols=len(args.config), figsize=[20, 10], squeeze = False)
+
     for model_no in range(len(args.config)):
+        print("Analyzing model no.", model_no + 1, "/", len(args.config))
         ## Read config file and set model and data
         config_file = Path(args.config[model_no])
 
@@ -137,6 +143,18 @@ if __name__ == '__main__':
             overlaps = compute_reinforcing_gradients(model, train_data.all, vectors, criterion, mnist=mnist)
             dump_pickle(overlaps,grad_path /  (name + '_overlaps.pkl'))
 
+        ## Compute logit gradients to check how they cluster
+        if args.precomputed_logit_grads:
+            print('Loading precomputed logit gradients')
+            logit_gradients = load_pickle(grad_path /  (name + '_logit_gradients.pkl'))
+        else:
+            print('Computing logit gradients')
+            mnist = False
+            if config['dataset']['type'] == 'mnist2D':
+                mnist = True
+            logit_gradients = compute_logit_grads(model, train_data, mnist=mnist, sort=True)
+            dump_pickle(logit_gradients, grad_path /  (name + '_logit_gradients.pkl'))
+
         # generalization measure weighting by eigenvalue - would not work since overlap values dont mean anything
         # just the sign change is important
         # heigenvalues_normalized = heigenvalues / np.max(heigenvalues)
@@ -197,7 +215,7 @@ if __name__ == '__main__':
                 axs_overlaps[1, model_no].set_ylim(-1,1)
                 plt.grid(True)
         
-        # Plot scalar products of all pairs of training gradients, ordered by classes, as heatmaps for all setups
+        # Plot cosine similarity of all pairs of training loss gradients, ordered by classes, as heatmaps for all setups
         if plot_coherence is True:
             coherent_normalized_grads_matrix = np.zeros((train_size,train_size))
             grad_data = compute_grad(model, train_data, criterion, sort=True)
@@ -207,6 +225,32 @@ if __name__ == '__main__':
             for_normalized_colorbar = axs_normalized_coherence[0, model_no].imshow(coherent_normalized_grads_matrix, norm=SymLogNorm(linthresh=1e-6), cmap='RdBu')
             plt.colorbar(for_normalized_colorbar, ax = axs_normalized_coherence[0, model_no])
             axs_normalized_coherence[0,model_no].text(0.5, 1.1, name, horizontalalignment='center', verticalalignment='center', transform=axs_normalized_coherence[0,model_no].transAxes, size=14)
+        
+        # Plot cosine similarity of all pairs of training logit gradients, ordered by logit and classes, as heatmaps for all setups
+        if plot_logit_coherence is True:
+            coherent_normalized_logit_grads_matrix = np.zeros((num_classes*train_size,num_classes*train_size))
+            grad_data = logit_gradients["normalized"]
+            for i in range(num_classes*train_size):
+                for j in range(num_classes*train_size):
+                    coherent_normalized_logit_grads_matrix[i, j] = np.dot(grad_data[i]/np.linalg.norm(grad_data[i]),grad_data[j]/np.linalg.norm(grad_data[j]))
+            #coherent_normalized_logit_grads_matrix = 
+            idx = None
+            for cls in range(3):
+                zero_idx = np.zeros(50) + (cls*150)
+                zero_idx = np.array([int(zero_idx[i]+(i)*3) for i in range(50)])
+                one_idx = zero_idx + 1
+                two_idx = zero_idx + 2
+                if idx is None:
+                    idx = zero_idx #np.concatenate((zero_idx, one_idx, two_idx), axis=0)
+                else:
+                    idx = np.concatenate((idx, zero_idx), axis=0) #np.concatenate((idx, zero_idx, one_idx, two_idx), axis=0)
+            coherent_sorted = coherent_normalized_logit_grads_matrix[idx]
+            coherent_sorted = coherent_sorted[:, idx]
+            for_logit_normalized_colorbar = axs_logit_normalized_coherence[0, model_no].imshow(coherent_sorted, cmap='RdBu', vmin=-1, vmax=1) #norm=SymLogNorm(linthresh=1e-3), 
+            plt.colorbar(for_logit_normalized_colorbar, ax = axs_logit_normalized_coherence[0, model_no])
+            #plt.clim(-1, 1)
+            #axs_logit_normalized_coherence[0, model_no].set_clim(-1, 1)
+            axs_logit_normalized_coherence[0, model_no].text(0.5, 1.1, name, horizontalalignment='center', verticalalignment='center', transform=axs_logit_normalized_coherence[0,model_no].transAxes, size=14)
     
     ## Export figures
     if plot_spectra is True:
@@ -217,3 +261,5 @@ if __name__ == '__main__':
         fig_overlaps.savefig(fig_path / f'Hessian_overlaps{".sharp" if args.reparameterize else ""}.png')
     if plot_coherence is True:
         fig_normalized_coherence.savefig(fig_path / f'grads_normalized_coherence{".sharp" if args.reparameterize else ""}.png')
+    if plot_logit_coherence is True:
+        fig_logit_normalized_coherence.savefig(fig_path / f'grads_logit_normalized_coherence{".sharp" if args.reparameterize else ""}.png')

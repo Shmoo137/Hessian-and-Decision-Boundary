@@ -256,6 +256,36 @@ def compute_grads(model, X, criterion = nn.CrossEntropyLoss()):
 
     overlap_matrix.append(grad / np.linalg.norm(grad))
 
-
-
   return np.array(overlap_matrix)
+
+def compute_logit_grads(model, train_data, mnist=False, sort=False):
+  if sort:
+      sorting_array = np.argsort(train_data.labels.flatten())
+  else:
+      sorting_array = np.arange(len(train_data.labels))
+  
+  if "CNN" in model.__class__.__name__:
+      data = torch.unsqueeze(train_data.all, 1)
+      labels = torch.unsqueeze(train_data.labels, 1)
+  else:
+      data = train_data.all
+      labels = train_data.labels
+
+  num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+  logit_grads_dict = {}
+  logit_grads_matrix = np.array([])
+  normalized_logit_grads_matrix = np.array([])
+
+  for i in tqdm(np.arange(len(labels))):
+    output = model(data[sorting_array[i]])
+    for j in range(output.shape[0]):
+      logit_grad_per_class = torch.autograd.grad(output[j], model.parameters(), create_graph=True) # we need create_graph = True because we're going for every element of output separately and having c passes
+      logit_grad_per_class = flatten_grad(logit_grad_per_class).detach().numpy() 
+      normalized_logit_grad_per_class = logit_grad_per_class / np.linalg.norm(logit_grad_per_class)
+
+      logit_grads_matrix = np.append(logit_grads_matrix, logit_grad_per_class)
+      normalized_logit_grads_matrix = np.append(normalized_logit_grads_matrix, normalized_logit_grad_per_class)
+
+  logit_grads_dict = {"unnormalized": logit_grads_matrix.reshape(-1, num_params), "normalized": normalized_logit_grads_matrix.reshape(-1, num_params)}
+  
+  return logit_grads_dict
