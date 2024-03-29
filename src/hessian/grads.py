@@ -188,17 +188,23 @@ def compute_overlap_of_point_w_heigenvector(model, x, y, heigenvectors, which_he
       overlap_matrix_normed_sign[i,j]=overlap
   return overlap_matrix, overlap_matrix_normed_sign # matrices are len(x) x len(y) - need to transpose!
 
-def analysis_overlap_w_vector(grad,vectors, cos_sim=True):
+def analysis_overlap_w_vector(grad, vectors, cos_sim=True):
   """
   Compute the overlap of a gradient with a set of vectors.
   """
   overlaps = np.dot(vectors, grad)
-  if np.linalg.norm(grad) != 0 and cos_sim:
-      overlaps = np.dot(vectors, grad) / np.linalg.norm(grad)
+  if np.linalg.norm(grad) > 1e-20 and cos_sim:
+      overlaps = np.dot(vectors, grad) / (np.linalg.norm(grad)) #*np.linalg.norm(vectors, axis=1))
+      """if np.any(overlaps > 1.1) or np.any(overlaps < -1.5):
+         print(np.dot(vectors, grad))
+         print(np.linalg.norm(grad))
+         exit() """
+  else:
+     overlaps = np.zeros(len(vectors))
   return overlaps
 
 
-def compute_reinforcing_gradients(model, X, vectors, criterion = nn.CrossEntropyLoss(), mnist=False, cos_sim=True):
+def compute_reinforcing_gradients(model, X, vectors, criterion = nn.CrossEntropyLoss(), mnist=False, cos_sim=True, y=None, grads_label='reinforcing'):
   analysis_func=lambda g: analysis_overlap_w_vector(g,vectors,cos_sim)
   overlap_matrix=np.zeros((len(vectors),X.shape[0]))
 
@@ -212,13 +218,27 @@ def compute_reinforcing_gradients(model, X, vectors, criterion = nn.CrossEntropy
         else:
             x = X[i]
     output = model(x)
-    y_argmax=np.argmax(output.detach())
-    if criterion._get_name() == 'MSELoss':
-        loss = criterion(output, nn.functional.one_hot(y_argmax, num_classes=output.shape[1]).to(torch.float32))
-    elif criterion._get_name() == 'NLLLoss':
-        loss = criterion(output.reshape(1, -1), y_argmax.reshape(1))
+
+    if grads_label == 'reinforcing':
+      label = np.argmax(output.detach())
+    elif grads_label == 'random':
+      label = torch.randint(0, 3, (1,)).long()
+    elif grads_label == 'zero':
+      label = torch.Tensor([0]).long()
+    elif grads_label == 'one':
+      label = torch.Tensor([1]).long()
+    elif grads_label == 'two':
+      label = torch.Tensor([2]).long()
     else:
-        loss = criterion(output.reshape(1,-1), y_argmax.reshape(1))
+      print("Not implemented type of gradient labels, computing reinforcing gradients instead!")
+      label = np.argmax(output.detach())
+
+    if criterion._get_name() == 'MSELoss':
+        loss = criterion(output, nn.functional.one_hot(label, num_classes=output.shape[1]).to(torch.float32))
+    elif criterion._get_name() == 'NLLLoss':
+        loss = criterion(output.reshape(1, -1), label.reshape(1))
+    else:
+        loss = criterion(output.reshape(1,-1), label.reshape(1))
     grad = torch.autograd.grad(loss, model.parameters(), create_graph=False)
     grad = flatten_grad(grad)
 
@@ -260,16 +280,16 @@ def compute_grads(model, X, criterion = nn.CrossEntropyLoss()):
 
 def compute_logit_grads(model, train_data, mnist=False, sort=False):
   if sort:
-      sorting_array = np.argsort(train_data.labels.flatten())
+    sorting_array = np.argsort(train_data.labels.flatten())
   else:
-      sorting_array = np.arange(len(train_data.labels))
+    sorting_array = np.arange(len(train_data.labels))
   
-  if "CNN" in model.__class__.__name__:
-      data = torch.unsqueeze(train_data.all, 1)
-      labels = torch.unsqueeze(train_data.labels, 1)
+  if mnist:
+    data = torch.unsqueeze(train_data.all, 1)
+    labels = torch.unsqueeze(train_data.labels, 1)
   else:
-      data = train_data.all
-      labels = train_data.labels
+    data = train_data.all
+    labels = train_data.labels
 
   num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
   logit_grads_dict = {}
