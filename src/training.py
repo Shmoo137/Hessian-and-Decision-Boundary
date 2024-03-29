@@ -60,7 +60,7 @@ def train_and_validate(model, train_data, validation_data, test_data,
                 for (X, y) in train_iterator:
 
                     # Forward pass
-                    outputs = model(X)
+                    outputs = model(X.float())
                     if criterion._get_name() == 'MSELoss':
                         loss = criterion(outputs, nn.functional.one_hot(y).to(torch.float32))
                     elif criterion._get_name() == 'HingeEmbeddingLoss':
@@ -98,7 +98,7 @@ def train_and_validate(model, train_data, validation_data, test_data,
                                                                 shuffle=False,
                                                                 batch_size=validation_data.__len__())
                     val_dataset, val_labels = next(iter(validation_itr))
-                    outputs = model(val_dataset)
+                    outputs = model(val_dataset.float())
                     if criterion._get_name() == 'MSELoss':
                         val_loss = criterion(outputs, nn.functional.one_hot(val_labels))
                     elif criterion._get_name() == 'HingeEmbeddingLoss':
@@ -112,7 +112,7 @@ def train_and_validate(model, train_data, validation_data, test_data,
                                                             shuffle=False,
                                                             batch_size=test_data.__len__())
                     test_dataset, test_labels = next(iter(test_itr))
-                    outputs = model(test_dataset)
+                    outputs = model(test_dataset.float())
                     if criterion._get_name() == 'MSELoss':
                         test_loss = criterion(outputs, nn.functional.one_hot(test_labels))
                     elif criterion._get_name() == 'HingeEmbeddingLoss':
@@ -193,6 +193,6 @@ def train_and_validate(model, train_data, validation_data, test_data,
 
 
 def accuracy(model, inputs, targets):
-    preds = model(inputs).argmax(-1).cpu().numpy()
+    preds = model(inputs.float()).argmax(-1).cpu().numpy()
     targets = targets.cpu().numpy().astype(np.float32)
     return 100 * sum(preds == targets) / len(targets)
