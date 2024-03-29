@@ -5,24 +5,23 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import SymLogNorm
+from hessian_eigenthings import compute_hessian_eigenthings
 
 #torch.set_default_dtype(torch.float64)
 
 from src.utils.plotting import *
 from src.utils.saving import dump_pickle, load_pickle
 from src.config import *
-from src.architectures import FNN, FNN_2layer, CNN, model_l2_norm
+from src.architectures import *
 from src.utils.general import find_hessian
 from src.hessian.grads import compute_reinforcing_gradients, compute_grad, compute_logit_grads
-from src.datasets import GaussMixtureDataset, IrisDataset, MNIST2DDataset, random_split, HierachicalGaussMixtureDataset, CircleDataset, HalfMoonDataset, GaussCheckerboardLinearClose
-from src.datasets import IntroDataset,MySubset,GaussMixtureDataset, IrisDataset, GaussCheckerboardLinearClose, GaussCheckerboardNoisyClose
-from src.datasets import MNIST2DDataset, HierachicalGaussMixtureDataset, CircleDataset, HalfMoonDataset
+from src.datasets import *
 
-models = {cls.name: cls for cls in [FNN, FNN_2layer, CNN]}
+models = {cls.name: cls for cls in [FNN, FNN_2layer, CNN, LeNet5, ResNet18]}
 setups = {'normal': 'normal_training', 'random': 'random_label_training', 'adv': 'adversarial_init_training'}
 optimizers = {'SGD': torch.optim.SGD, 'Adam': torch.optim.Adam}
 datasets = {'gauss_mixtures': GaussMixtureDataset, 'iris': IrisDataset,
-            'mnist2D': MNIST2DDataset, 'hierachical': HierachicalGaussMixtureDataset,
+            'mnist2D': MNIST2DDataset, 'cifar10': CIFAR10, 'hierachical': HierachicalGaussMixtureDataset,
             'circle': CircleDataset, 'half_moon': HalfMoonDataset, 'intro': IntroDataset,
             'gauss_checkerboard_noisy_close': GaussCheckerboardNoisyClose, 'gauss_checkerboard_linear_close': GaussCheckerboardLinearClose}
 
@@ -38,7 +37,7 @@ plot_spectra = False
 plot_eigenvectors = False
 plot_overlaps = False
 plot_coherence = False
-plot_logit_coherence = True
+plot_logit_coherence = False
 
 zero = 1e-6
 
@@ -46,9 +45,11 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Compute Hessians, spectra, eigenvectors, and overlaps and visualize them.')
     parser.add_argument('--config', type=str, nargs='+', help=f'Configuration file(s) of model(s) from {CONFIG_DIR}.')
+    parser.add_argument('--num_eigenthings', type=int, default = 0, help=f'Number of the top heigenvalues and heigenvectors (if approx).')
     parser.add_argument('--precomputed_hessian', action=argparse.BooleanOptionalAction, help='Use precomputed hessian')
     parser.add_argument('--precomputed_overlap', action=argparse.BooleanOptionalAction, help='Use precomputed overlap')
     parser.add_argument('--precomputed_logit_grads', action=argparse.BooleanOptionalAction, help='Use precomputed logit gradients')
+    parser.add_argument('--approximate_hessian', action=argparse.BooleanOptionalAction, help='Approximate the hessian')
     parser.add_argument('--reparameterize', action=argparse.BooleanOptionalAction, help='Reparameterize the model to make it more sharp.')
     args = parser.parse_args()
     #assert not args.precomputed_hessian or args.precomputed_overlap, "Cannot load precomputed overlap without precomputed hessian"
@@ -102,6 +103,13 @@ if __name__ == '__main__':
 
         model.load_state_dict(torch.load(MODEL_DIR / dir / (name + '.pt')))
 
+        train_set = torch.utils.data.TensorDataset(
+            train_data.all.float(),
+            train_data.labels)
+        
+        train_iterator = torch.utils.data.DataLoader(train_set,
+                                                     shuffle=False,
+                                                     batch_size=config['trainer']['batch_size'])
 
         # Possibly change the parameters of the model
         if args.reparameterize:
@@ -121,6 +129,10 @@ if __name__ == '__main__':
             hessian = np.load(grad_path /  (name + '_hessian.npy'))
             heigenvalues = np.load(grad_path /  (name + '_heigenvalues.npy'))
             heigenvectors = np.load(grad_path /  (name + '_heigenvectors.npy'))
+        elif args.approximate_hessian:
+            heigenvalues, heigenvectors = compute_hessian_eigenthings(model, train_iterator, criterion, args.num_eigenthings, use_gpu = False)
+            np.save(grad_path /  (name + '_heigenvalues'), heigenvalues)
+            np.save(grad_path /  (name + '_heigenvectors'), heigenvectors)
         else:
             hessian = find_hessian(loss, model)
             print("Computing eigenvalues and eigenvectors")
@@ -138,7 +150,7 @@ if __name__ == '__main__':
             print('Computing overlap')
             vectors = [heigenvectors[:, which_heigenvector] for which_heigenvector in range(heigenvectors.shape[1])]
             mnist = False
-            if config['dataset']['type'] == 'mnist2D':
+            if config['dataset']['type'] == 'mnist2D' or config['dataset']['type'] == 'cifar10':
                 mnist = True
             overlaps = compute_reinforcing_gradients(model, train_data.all, vectors, criterion, mnist=mnist)
             dump_pickle(overlaps,grad_path /  (name + '_overlaps.pkl'))
@@ -150,7 +162,7 @@ if __name__ == '__main__':
         else:
             print('Computing logit gradients')
             mnist = False
-            if config['dataset']['type'] == 'mnist2D':
+            if config['dataset']['type'] == 'mnist2D' or config['dataset']['type'] == 'cifar10':
                 mnist = True
             logit_gradients = compute_logit_grads(model, train_data, mnist=mnist, sort=True)
             dump_pickle(logit_gradients, grad_path /  (name + '_logit_gradients.pkl'))
@@ -233,7 +245,6 @@ if __name__ == '__main__':
             for i in range(num_classes*train_size):
                 for j in range(num_classes*train_size):
                     coherent_normalized_logit_grads_matrix[i, j] = np.dot(grad_data[i]/np.linalg.norm(grad_data[i]),grad_data[j]/np.linalg.norm(grad_data[j]))
-            #coherent_normalized_logit_grads_matrix = 
             idx = None
             for cls in range(3):
                 zero_idx = np.zeros(50) + (cls*150)
