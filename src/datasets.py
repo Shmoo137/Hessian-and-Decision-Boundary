@@ -6,6 +6,7 @@ from torch.autograd import Variable
 from torch.utils.data.dataset import _accumulate,randperm, T_co, Optional, Generator,Sequence, default_generator, List, Subset, T
 from torch.utils.data import Dataset
 from torchvision import datasets
+import torchvision.transforms as transforms
 from torchvision.transforms import ToTensor
 
 def fun(arg):
@@ -553,7 +554,6 @@ def random_split(dataset: Dataset[T], lengths: Sequence[int],
 
 
 class MNIST2DDataset(Dataset):
-  num_classes = 3
 
   def __init__(self, num_samples_per_cls=200, class_list=[0,1,2], random=False, seed=28):
     mnist_data = datasets.MNIST(root='datasets', train=False, transform=ToTensor(), download=True)
@@ -566,6 +566,66 @@ class MNIST2DDataset(Dataset):
     self.X = mnist_data.test_data.reshape(mnist_data.test_data.shape[0], 1, mnist_data.test_data.shape[1], mnist_data.test_data.shape[2])
     self.X = self.X[x_idx]
     self.y = mnist_data.test_labels[x_idx]
+    self.num_classes = len(class_list)
+
+    #convert labels
+    y_idx_list = [torch.where(self.y==i)[0] for i in class_list]
+    for y_idx in range(len(y_idx_list)):
+        self.y[y_idx_list[y_idx]] = y_idx
+
+    self.input_size = self.X.shape[1]
+
+    self.act_random = False
+
+    self.seed = seed
+
+    if random:
+      self.random_labels()
+
+  def random_labels(self):
+    idx = torch.randperm(self.y.shape[0], generator=torch.Generator().manual_seed(self.seed))
+    self.y_random = self.y[idx]
+    self.act_random = True
+
+  def true_labels(self):
+    self.act_random = False
+
+  def __len__(self):
+    return len(self.y)
+
+  def __getitem__(self, idx):
+    if self.act_random:
+      y = self.y_random[idx]
+    else:
+      y = self.y[idx]
+    return self.X[idx], y.to(torch.long) #int(y)
+  
+class CIFAR10(Dataset):
+  num_classes = 3
+
+  def __init__(self, num_samples_per_cls=200, class_list=[0,1,2], random=False, seed=28):
+
+    transform_train = transforms.Compose([
+          transforms.RandomCrop(32, padding=4),
+          transforms.RandomHorizontalFlip(),
+          transforms.ToTensor(),
+          transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+      ])
+
+    transform_test = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    ])
+
+    cifar_data = datasets.CIFAR10(root='datasets', train=False, transform=transform_test, download=True)
+    x_idx = torch.tensor([])
+    for i in class_list:
+      x_idx = torch.cat((x_idx, (torch.tensor(cifar_data.targets) == i).nonzero(as_tuple=True)[0][:num_samples_per_cls]))
+    x_idx = x_idx.long()
+
+    self.X = np.swapaxes(cifar_data.data,1,3) #.reshape(cifar_data.data.shape[0], 1, cifar_data.data.shape[1], cifar_data.data.shape[2])
+    self.X = self.X[x_idx]
+    self.y = torch.tensor(cifar_data.targets)[x_idx]
     self.num_classes = len(class_list)
 
     #convert labels

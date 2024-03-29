@@ -4,21 +4,17 @@ from pathlib import Path
 
 import torch
 
-from src.architectures import CNN, FNN, FNN_2layer, model_l2_norm
+from src.architectures import *
 from src.config import *
-from src.datasets import (CircleDataset, GaussCheckerboardLinearClose,
-                          GaussCheckerboardNoisyClose, GaussMixtureDataset,
-                          HalfMoonDataset, HierachicalGaussMixtureDataset,
-                          IntroDataset, IrisDataset, MNIST2DDataset, MySubset,
-                          random_split)
+from src.datasets import *
 from src.training import train_and_validate
 from src.utils.plotting import *
 
 
-models = {cls.name: cls for cls in [FNN, FNN_2layer, CNN]}
+models = {cls.name: cls for cls in [FNN, FNN_2layer, CNN, LeNet5, ResNet18]}
 optimizers = {'SGD': torch.optim.SGD, 'Adam': torch.optim.Adam}
 datasets = {'gauss_mixtures': GaussMixtureDataset, 'iris': IrisDataset,
-            'mnist2D': MNIST2DDataset, 'hierachical': HierachicalGaussMixtureDataset,
+            'mnist2D': MNIST2DDataset, 'cifar10': CIFAR10, 'hierachical': HierachicalGaussMixtureDataset,
             'circle': CircleDataset, 'half_moon': HalfMoonDataset, 'intro': IntroDataset,
             'gauss_checkerboard_noisy_close': GaussCheckerboardNoisyClose, 'gauss_checkerboard_linear_close': GaussCheckerboardLinearClose}
 
@@ -43,7 +39,6 @@ if __name__ == '__main__':
     optimizer_cls = optimizers[config['optimizer']['type']]
 
     dataset = datasets[config['dataset']['type']](**config['dataset']['args'])
-    print(dataset)
     num_classes = dataset.num_classes
     input_size = dataset.input_size
     n = len(dataset)
@@ -58,6 +53,8 @@ if __name__ == '__main__':
         train_data, test_data, val_data = random_split(
             dataset, [train_size, test_size, val_size], generator=torch.Generator().manual_seed(42))
 
+    s = torch.random.seed()
+    print('random seed ', s)
     model = model_cls(input_size=input_size,
                       num_classes=num_classes, **config['model']['args'])
 
@@ -110,7 +107,7 @@ if __name__ == '__main__':
             model.load_state_dict(torch.load(
                 MODEL_DIR / (config['init_model_at'] + '.pt')))
 
-    final_losses = train_and_validate(model, train_data, test_data, test_data, optimizer,
+    final_losses = train_and_validate(model, train_data, val_data, test_data, optimizer,
                                       criterion=criterion, scheduler=scheduler,
                                       name=name, folder_model=MODEL_DIR / dir,
                                       folder_grads=GRAD_DIR / dir,

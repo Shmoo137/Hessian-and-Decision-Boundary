@@ -1,0 +1,33 @@
+{
+    "model": {
+        "type": "LeNet5",
+        "args": {
+        }
+    },
+    "optimizer": {
+        "type": "SGD",
+        "args": {
+            "lr": 0.005,
+            "momentum": 0.0,
+            "weight_decay": 0.1
+        }
+    },
+    "dataset": {
+        "type": "cifar10",
+        "args": {
+            "random": false, 
+            "class_list": [1,2,7],
+            "num_samples_per_cls": 1000
+        }
+    },
+    "init_model_at": "",
+    "train_fraction": 0.7,
+    "test_fraction": 0.2,
+    "trainer": {
+        "num_epochs": 100,
+        "how_often_save_model": 0,
+        "how_often_compute_grads": 0,
+        "how_often_print": 1,
+        "batch_size": 32
+    }
+}

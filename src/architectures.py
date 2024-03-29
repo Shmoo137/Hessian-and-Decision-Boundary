@@ -1,6 +1,27 @@
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
+import torchvision.models as models
+
+class ResNet18(nn.Module):
+
+    name = "ResNet18"
+
+    def __init__(self, input_size = None, num_classes = 10, for_CIFAR = True):
+        super(ResNet18, self).__init__()
+
+        # Import ResNet50 model pretrained on ImageNet
+        self.model = models.resnet18(weights = "DEFAULT")
+        if for_CIFAR:
+            # Modify conv1 to suit CIFAR-10
+            self.model.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
+        # Modify the final fully connected layer according to the number of classes
+        num_features = self.model.fc.in_features
+        self.model.fc = nn.Linear(num_features, num_classes)
+
+    def forward(self, x: torch.Tensor):
+        x = self.model(x)
+        return x
 
 class FNN(nn.Module):
 
@@ -147,3 +168,49 @@ def model_l2_norm(model):
     parameters = model.parameters()
     l2_norm = torch.norm(torch.stack([torch.norm(g.detach(), 2.0) for g in parameters]), 2.0)
     return l2_norm.item()
+
+# From: https://github.com/kampmichael/RelativeFlatnessAndGeneralization/blob/main/CorrelationFlatnessGeneralization/models/lenet.py
+class LeNet5(nn.Module):
+    name = "LeNet5"
+    def __init__(self, input_size=1, num_classes=10):
+        super(LeNet5, self).__init__()
+
+        self.conv1 = nn.Conv2d(3, 6, 5)
+        #init.xavier_normal_(self.conv1.weight.data)
+        #init.zeros_(self.conv1.bias.data)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.conv2 = nn.Conv2d(6, 16, 5)
+        #init.xavier_normal_(self.conv2.weight.data)
+        #init.zeros_(self.conv2.bias.data)
+        self.fc1 = nn.Linear(16 * 5 * 5, 120)
+        #init.xavier_normal_(self.fc1.weight.data)
+        #init.zeros_(self.fc1.bias.data)
+        self.fc2 = nn.Linear(120, 84)
+        #init.xavier_normal_(self.fc2.weight.data)
+        #init.zeros_(self.fc2.bias.data)
+        self.fc3 = nn.Linear(84, num_classes)
+        #init.xavier_normal_(self.fc3.weight.data)
+        #init.zeros_(self.fc3.bias.data)
+
+    def forward(self, x):
+        #print("input x: ", x)
+        x = self.pool(F.relu(self.conv1(x)))
+        #print("After the first layers: ", x)
+        x = self.pool(F.relu(self.conv2(x)))
+        x = x.view(-1, 16 * 5 * 5)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
+
+    def feature_layer(self, x):
+        x = self.pool(F.relu(self.conv1(x)))
+        x = self.pool(F.relu(self.conv2(x)))
+        x = x.view(-1, 16 * 5 * 5)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        return x.view(-1, 84, 1)
+
+    def classify(self, x):
+        x = self.fc3(x)
+        return x

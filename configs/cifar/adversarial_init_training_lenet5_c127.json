@@ -1,33 +1,33 @@
 {
     "model": {
-        "type": "CNN",
+        "type": "LeNet5",
         "args": {
         }
     },
     "optimizer": {
         "type": "SGD",
         "args": {
-            "lr": 0.02,
+            "lr": 0.005,
             "momentum": 0.0,
             "weight_decay": 0.0
         }
     },
     "dataset": {
-        "type": "mnist2D",
+        "type": "cifar10",
         "args": {
             "random": false,
-            "class_list": [0,1,7],
-            "num_samples_per_cls": 300
+            "class_list": [1,2,7],
+            "num_samples_per_cls": 1000
         }
     },
-    "init_model_at": "mnist2D/random_label_training_c017",
-    "train_fraction": 0.5,
+    "init_model_at": "cifar/random_label_training_lenet5_c127",
+    "train_fraction": 0.7,
     "test_fraction": 0.2,
     "trainer": {
-        "num_epochs": 1500,
+        "num_epochs": 500,
         "how_often_save_model": 0,
         "how_often_compute_grads": 0,
-        "how_often_print": 50,
+        "how_often_print": 1,
         "batch_size": 64
     }
 }
