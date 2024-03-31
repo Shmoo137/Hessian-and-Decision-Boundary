@@ -14,6 +14,20 @@ c_vibrant = {'blue': '#0077BB',
              'magenta': '#EE3377',
              'grey': '#BBBBBB'}
 
+c_vibrant_array = ['#0077BB',
+                   '#33BBEE',
+                   '#009988',
+                   '#EE7733',
+                   '#CC3311',
+                   '#EE3377',
+                   '#BBBBBB',
+                   '#AAAA00',
+                   '#DDDDDD',
+                   '#332288',
+                   '#DDCC77',
+                   '#44BB99'
+                   ]
+
 c_light = {'light blue': '#77AADD',
            'light_cyan': '#EE8866',
            'min': '#EEDD88',
@@ -34,6 +48,17 @@ c_muted = {'indigo': '#332288',
            'wine': '#883355',
            'purple': '#AA4499',
            'grey': '#DDDDDD'}
+
+c_muted_array = ['#332288',
+                 '#88CCEE',
+                 '#44AA99',
+                 '#117733',
+                 '#999933',
+                 '#DDCC77',
+                 '#CC6677',
+                 '#883355',
+                 '#AA4499',
+                 '#DDDDDD']
 
 zero = 1e-6
 
