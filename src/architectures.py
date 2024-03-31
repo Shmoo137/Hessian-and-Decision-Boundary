@@ -7,11 +7,14 @@ class ResNet18(nn.Module):
 
     name = "ResNet18"
 
-    def __init__(self, input_size = None, num_classes = 10, for_CIFAR = True):
+    def __init__(self, input_size = None, num_classes = 10, for_CIFAR = True, pretrained = True):
         super(ResNet18, self).__init__()
 
         # Import ResNet50 model pretrained on ImageNet
-        self.model = models.resnet18(weights = "DEFAULT")
+        if pretrained:
+            self.model = models.resnet18(weights = "DEFAULT")
+        else:
+            self.model = models.resnet18()
         if for_CIFAR:
             # Modify conv1 to suit CIFAR-10
             self.model.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)

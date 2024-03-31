@@ -139,7 +139,7 @@ def train_and_validate(model, train_data, validation_data, test_data,
                     if early_stopping and train_acc == 100:
                         stop = True
 
-                if scheduler == True:
+                if scheduler is not False:
                     scheduler.step()
 
         if stop:

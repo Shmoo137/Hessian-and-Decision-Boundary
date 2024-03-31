@@ -13,6 +13,7 @@ from src.utils.plotting import *
 
 models = {cls.name: cls for cls in [FNN, FNN_2layer, CNN, LeNet5, ResNet18]}
 optimizers = {'SGD': torch.optim.SGD, 'Adam': torch.optim.Adam}
+schedulers = {'MultiStepLR': torch.optim.lr_scheduler.MultiStepLR}
 datasets = {'gauss_mixtures': GaussMixtureDataset, 'iris': IrisDataset,
             'mnist2D': MNIST2DDataset, 'cifar10': CIFAR10, 'hierachical': HierachicalGaussMixtureDataset,
             'circle': CircleDataset, 'half_moon': HalfMoonDataset, 'intro': IntroDataset,
@@ -73,7 +74,11 @@ if __name__ == '__main__':
     # Don't use weight decay, momentum and scheduler for adversarial initialization!
     optimizer = optimizer_cls(model.parameters(), **
                               config['optimizer']['args'])
-    scheduler = False
+    if config['scheduler'] is False:
+        scheduler = False
+    else:
+        scheduler_cls = schedulers[config['scheduler']['type']]
+        scheduler = scheduler_cls(optimizer, **config['scheduler']['args'])
 
     import copy
 

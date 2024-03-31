@@ -8,6 +8,7 @@ from torch.utils.data import Dataset
 from torchvision import datasets
 import torchvision.transforms as transforms
 from torchvision.transforms import ToTensor
+from src.config import DATASET_DIR
 
 def fun(arg):
   return np.sin(arg[0]) + np.cos(arg[1]) * arg[2] + arg[3] * arg[4]
@@ -555,17 +556,17 @@ def random_split(dataset: Dataset[T], lengths: Sequence[int],
 
 class MNIST2DDataset(Dataset):
 
-  def __init__(self, num_samples_per_cls=200, class_list=[0,1,2], random=False, seed=28):
-    mnist_data = datasets.MNIST(root='datasets', train=False, transform=ToTensor(), download=True)
+  def __init__(self, num_samples_per_cls=200, class_list=[0,1,2], train = False, random=False, seed=28):
+    mnist_data = datasets.MNIST(root=DATASET_DIR, train=train, transform=ToTensor(), download=True)
 
     x_idx = torch.tensor([])
     for i in class_list:
-      x_idx = torch.cat((x_idx, (mnist_data.test_labels == i).nonzero(as_tuple=True)[0][:num_samples_per_cls]))
+      x_idx = torch.cat((x_idx, (mnist_data.targets == i).nonzero(as_tuple=True)[0][:num_samples_per_cls]))
     x_idx = x_idx.long()
 
-    self.X = mnist_data.test_data.reshape(mnist_data.test_data.shape[0], 1, mnist_data.test_data.shape[1], mnist_data.test_data.shape[2])
+    self.X = mnist_data.data.reshape(mnist_data.data.shape[0], 1, mnist_data.data.shape[1], mnist_data.data.shape[2])
     self.X = self.X[x_idx]
-    self.y = mnist_data.test_labels[x_idx]
+    self.y = mnist_data.targets[x_idx]
     self.num_classes = len(class_list)
 
     #convert labels
@@ -601,23 +602,23 @@ class MNIST2DDataset(Dataset):
     return self.X[idx], y.to(torch.long) #int(y)
   
 class CIFAR10(Dataset):
-  num_classes = 3
 
-  def __init__(self, num_samples_per_cls=200, class_list=[0,1,2], random=False, seed=28):
+  def __init__(self, num_samples_per_cls=200, class_list=[0,1,2], train = False, random=False, seed=28):
 
-    transform_train = transforms.Compose([
-          transforms.RandomCrop(32, padding=4),
-          transforms.RandomHorizontalFlip(),
+    if train:
+      transform = transforms.Compose([
+            transforms.RandomCrop(32, padding=4),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        ])
+    else:
+      transform = transforms.Compose([
           transforms.ToTensor(),
           transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
       ])
 
-    transform_test = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-    ])
-
-    cifar_data = datasets.CIFAR10(root='datasets', train=False, transform=transform_test, download=True)
+    cifar_data = datasets.CIFAR10(root=DATASET_DIR, train=train, transform=transform, download=True)
     x_idx = torch.tensor([])
     for i in class_list:
       x_idx = torch.cat((x_idx, (torch.tensor(cifar_data.targets) == i).nonzero(as_tuple=True)[0][:num_samples_per_cls]))

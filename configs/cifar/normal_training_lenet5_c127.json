@@ -12,6 +12,7 @@
             "weight_decay": 0.1
         }
     },
+    "scheduler": false,
     "dataset": {
         "type": "cifar10",
         "args": {
