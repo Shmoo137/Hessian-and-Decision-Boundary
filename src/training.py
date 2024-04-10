@@ -131,13 +131,19 @@ def train_and_validate(model, train_data, validation_data, test_data,
 
                 if epoch % how_often_print == 0:
                     train_acc = accuracy(model, train_data.all, train_data.labels)
-                    test_acc = accuracy(model, test_data.all, test_data.labels)
-                    print("Epoch: ", epoch, "/", num_epochs, "Training loss: {:.4e}".format(loss.item()),
+                    val_acc = accuracy(model, validation_data.all, validation_data.labels)
+                    print("Epoch: ", epoch + 1, "/", num_epochs, "Training loss: {:.4e}".format(loss.item()),
                           "Validation loss: {:.4e}".format(val_loss.item()),
-                          "/", "Train acc: {:.1f} ".format(train_acc), "Test acc: {:.1f}".format(test_acc))
+                          "/", "Train acc: {:.1f} ".format(train_acc), "Validation acc: {:.1f}".format(val_acc))
 
-                    if early_stopping and train_acc == 100:
-                        stop = True
+                if early_stopping and train_acc == 100:
+                    stop = True
+                
+                if stop is True or epoch + 1 == num_epochs:
+                    train_acc = accuracy(model, train_data.all, train_data.labels)
+                    val_acc = accuracy(model, validation_data.all, validation_data.labels)
+                    test_acc = accuracy(model, test_data.all, test_data.labels)
+                    print("Final epoch: ", epoch + 1, "/", num_epochs, "Train acc: {:.1f}".format(train_acc), "Val acc: {:.1f}".format(val_acc), "Test acc: {:.1f}".format(test_acc))
 
                 if scheduler is not False:
                     scheduler.step()
