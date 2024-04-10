@@ -2,22 +2,28 @@
     "model": {
         "type": "ResNet18",
         "args": {
-            "pretrained": true
+            "pretrained": false
         }
     },
     "optimizer": {
         "type": "SGD",
         "args": {
-            "lr": 0.01,
+            "lr": 0.02,
             "momentum": 0.0,
-            "weight_decay": 0.1
+            "weight_decay": 0.0
         }
     },
-    "scheduler": false,
+    "scheduler": {
+        "type": "MultiStepLR",
+        "args":{
+            "milestones": [100], 
+            "gamma": 0.1
+        }
+    },
     "dataset": {
         "type": "cifar10",
         "args": {
-            "random": false, 
+            "random": true, 
             "class_list": [0,1,2,3,4,5,6,7,8,9],
             "num_samples_per_cls": 1000,
             "train": true
@@ -27,10 +33,10 @@
     "train_fraction": 0.7,
     "test_fraction": 0.2,
     "trainer": {
-        "num_epochs": 100,
+        "num_epochs": 150,
         "how_often_save_model": 0,
         "how_often_compute_grads": 0,
         "how_often_print": 10,
-        "batch_size": 64
+        "batch_size": 128
     }
 }
